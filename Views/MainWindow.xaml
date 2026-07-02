@@ -20,7 +20,7 @@
         <controls:FolderTreeView
             x:Name="folderTree"
             Grid.Column="0"
-            SelectedItem="{Binding SelectedItem}"
+            SelectedItem="{Binding SelectedFolder}"
             SelectedTreePath="{Binding SelectedTreePath, Mode=TwoWay}" />
 
         <!--  中央: GridSplitter  -->
@@ -35,8 +35,10 @@
         <!--  右: サムネイル一覧  -->
         <controls:ThumbnailListView
             x:Name="thumbnailList"
-            Folder="{Binding SelectedItem.FilePath}"
-            Grid.Column="2" ItemDoubleClick="thumbnailList_ItemDoubleClick" />
+            Grid.Column="2"
+            Folder="{Binding SelectedFolder.FilePath}"
+            ItemDoubleClick="thumbnailList_ItemDoubleClick"
+            SelectedIndex="{Binding ViewState.SelectedThumbnailIndex, Mode=TwoWay}" />
 
     </Grid>
 </Window>

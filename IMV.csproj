@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Storage\ThumbnailStorage.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0-preview.5.26302.115" />
     <PackageReference Include="VirtualizingWrapPanel" Version="2.5.2" />
@@ -25,6 +29,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RadianTools.UI.WPF\src\RadianTools.UI.WPF\RadianTools.UI.WPF.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Storage\" />
   </ItemGroup>
 
 </Project>

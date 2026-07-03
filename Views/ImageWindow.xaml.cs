@@ -15,20 +15,18 @@ using System.Windows.Media;
 
 public enum ImageWindowPageMode
 {
+    /// <summary>1ページ</summary>
     Single = 1,
-    Double = 2
-}
-
-public enum ImageWindowPageOrder
-{
-    RightToLeft,
-    LeftToRight
+    /// <summary>2ページ(右→左)</summary>
+    DoubleRL,
+    /// <summary>2ページ(左→右)</summary>
+    DoubleLR
 }
 
 public partial class ImageWindow : Window
 {
     private IReadOnlyList<ThumbnailItemViewModel> _items = Array.Empty<ThumbnailItemViewModel>();
-    private ImageWindowPageMode _pageMode = ImageWindowPageMode.Double;
+    private ImageWindowPageMode _pageMode = ImageWindowPageMode.DoubleRL;
     private int _loadVersion;
     private CancellationTokenSource? _loadCts;
     private ImageViewState? _imageViewState;
@@ -93,13 +91,33 @@ public partial class ImageWindow : Window
         var token = _loadCts?.Token ?? CancellationToken.None;
         var version = _loadVersion;
 
-        var right = GetItem(SelectedIndex);
-        var left = GetItem(SelectedIndex + 1);
+        ThumbnailItemViewModel? right = null;
+        ThumbnailItemViewModel? left = null;
+        switch( _pageMode )
+        {
+            case ImageWindowPageMode.Single:
+                left = GetItem(SelectedIndex);
+                break;
+
+            case ImageWindowPageMode.DoubleRL:
+                left = GetItem(SelectedIndex + 1);
+                right = GetItem(SelectedIndex);
+                break;
+
+            case ImageWindowPageMode.DoubleLR:
+                left = GetItem(SelectedIndex);
+                right = GetItem(SelectedIndex + 1);
+                break;
+
+        }
 
         UpdateTitle(right, left, true);
 
-        var rightTask = LoadImageAsync(right, token);
-        var leftTask = _pageMode == ImageWindowPageMode.Double
+        var rightTask = (right != null)
+            ? LoadImageAsync(right, token)
+            : Task.FromResult<ImageSource?>(null);
+
+        var leftTask = (left != null)
             ? LoadImageAsync(left, token)
             : Task.FromResult<ImageSource?>(null);
 
@@ -110,12 +128,8 @@ public partial class ImageWindow : Window
         if (version != _loadVersion)
             return;
 
+        LeftImage.Source = leftImg;
         RightImage.Source = rightImg;
-
-        if (_pageMode == ImageWindowPageMode.Double)
-            LeftImage.Source = leftImg;
-        else
-            LeftImage.Source = null;
 
         UpdateTitle(right, left);
     }
@@ -128,11 +142,14 @@ public partial class ImageWindow : Window
         switch (_pageMode)
         {
             case ImageWindowPageMode.Single:
-                LeftCol.Width = new GridLength(0);
+                LeftCol.Width = new GridLength(1, GridUnitType.Star);
+                RightCol.Width = new GridLength(0);
                 break;
 
-            case ImageWindowPageMode.Double:
+            case ImageWindowPageMode.DoubleRL:
+            case ImageWindowPageMode.DoubleLR:
                 LeftCol.Width = new GridLength(1, GridUnitType.Star);
+                RightCol.Width = new GridLength(1, GridUnitType.Star);
                 break;
         }
     }
@@ -145,21 +162,28 @@ public partial class ImageWindow : Window
         ThumbnailItemViewModel? left,
         bool loading = false)
     {
+        if( left==null && right== null)
+        {
+            Title = "";
+            return;
+        }
+
         var total = _items.Count;
         var page = _items.Count == 0 ? 0 : SelectedIndex + 1;
         var strLoading = loading ? " (Loading...)" : "";
 
-        string filePart;
-        if (_pageMode == ImageWindowPageMode.Double)
+        if( left!=null && right!=null )
         {
-            filePart = $"L:{left?.DisplayName} R:{right?.DisplayName}";
-        }
-        else
+            Title = $"({page}, {page + 1} / {total}) L:{left?.DisplayName} R:{right?.DisplayName}{strLoading}";
+            return;
+        } 
+        if (left != null)
         {
-            filePart = $"{right?.DisplayName}";
+            Title = $"({page} / {total}) {left?.DisplayName}{strLoading}";
+            return;
         }
 
-        Title = $"({page} / {total}) {filePart}{strLoading}";
+        Title = $"({page} / {total}) {right?.DisplayName}{strLoading}";
     }
 
     /// <summary>
@@ -180,7 +204,14 @@ public partial class ImageWindow : Window
         if (_items.Count == 0)
             return;
 
-        var diff = (int)_pageMode;
+        var diff = 1;
+        switch (_pageMode)
+        {
+            case ImageWindowPageMode.DoubleLR:
+            case ImageWindowPageMode.DoubleRL:
+                diff = 2;
+                break;
+        }
         await SetPageIndexAsync(SelectedIndex + diff);
     }
 
@@ -189,7 +220,14 @@ public partial class ImageWindow : Window
     /// </summary>
     private async Task PrevAsync()
     {
-        var diff = (int)_pageMode;
+        var diff = 1;
+        switch(_pageMode)
+        {
+            case ImageWindowPageMode.DoubleLR:
+            case ImageWindowPageMode.DoubleRL:
+                diff = 2;
+                break;
+        }
         await SetPageIndexAsync(SelectedIndex - diff);
     }
 
@@ -198,7 +236,12 @@ public partial class ImageWindow : Window
         if (_items.Count == 0)
             return;
 
-        SelectedIndex = ClampPageIndex(index);
+        var current = SelectedIndex;
+        var next = ClampPageIndex(index);
+        if (current == next)
+            return;
+
+        SelectedIndex = next;
         StartNewLoad();
         await UpdateImagesAsync();
     }
@@ -215,8 +258,10 @@ public partial class ImageWindow : Window
     /// <summary>
     /// キーボード操作
     /// </summary>
-    private async void ImageWindow_KeyDown(object sender, KeyEventArgs e)
+    protected override async void OnKeyDown(KeyEventArgs e)
     {
+        base.OnKeyDown(e);
+
         switch (e.Key)
         {
             case Key.Right:
@@ -230,26 +275,18 @@ public partial class ImageWindow : Window
             case Key.Escape:
                 Close();
                 break;
-
-            case Key.D1:
-                _pageMode = ImageWindowPageMode.Single;
-                ApplyLayout();
-                await UpdateImagesAsync();
-                break;
-
-            case Key.D2:
-                _pageMode = ImageWindowPageMode.Double;
-                ApplyLayout();
-                await UpdateImagesAsync();
-                break;
         }
+
+        e.Handled = true;
     }
 
     /// <summary>
     /// ホイール操作
     /// </summary>
-    private async void ImageWindow_MouseWheel(object sender, MouseWheelEventArgs e)
+    protected override async void OnMouseWheel(MouseWheelEventArgs e)
     {
+        base.OnMouseWheel(e);
+
         if (e.Delta > 0)
             await PrevAsync();
         else
@@ -329,9 +366,17 @@ public partial class ImageWindow : Window
         await UpdateImagesAsync();
     }
 
-    private async void Mode2Button_Click(object sender, RoutedEventArgs e)
+    private async void Mode2RLButton_Click(object sender, RoutedEventArgs e)
     {
-        _pageMode = ImageWindowPageMode.Double;
+        _pageMode = ImageWindowPageMode.DoubleRL;
+        ApplyLayout();
+        await UpdateImagesAsync();
+    }
+
+
+    private async void Mode2LRButton_Click(object sender, RoutedEventArgs e)
+    {
+        _pageMode = ImageWindowPageMode.DoubleLR;
         ApplyLayout();
         await UpdateImagesAsync();
     }

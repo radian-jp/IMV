@@ -4,14 +4,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Image Viewer"
     Width="1200"
-    Height="800"
-    KeyDown="ImageWindow_KeyDown"
-    MouseWheel="ImageWindow_MouseWheel">
+    Height="800">
 
     <Grid>
         <Grid.RowDefinitions>
             <!--  ヘッダー  -->
-            <RowDefinition Height="30" />
+            <RowDefinition Height="38" />
             <!--  本体  -->
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -19,7 +17,7 @@
         <!--  上部情報バー  -->
         <Border
             Grid.Row="0"
-            Padding="6"
+            Padding="0"
             Background="#222">
 
             <Grid>
@@ -34,18 +32,27 @@
 
                     <Button
                         x:Name="Mode1Button"
-                        Width="30"
-                        Height="22"
+                        Width="32"
+                        Height="32"
                         Margin="0,0,5,0"
                         Click="Mode1Button_Click"
                         Content="1" />
 
                     <Button
-                        x:Name="Mode2Button"
-                        Width="30"
-                        Height="22"
-                        Click="Mode2Button_Click"
-                        Content="2" />
+                        x:Name="Mode2RLButton"
+                        Width="32"
+                        Height="32"
+                        Margin="0,0,5,0"
+                        Click="Mode2RLButton_Click"
+                        Content="2RL" />
+
+                    <Button
+                        x:Name="Mode2LRButton"
+                        Width="32"
+                        Height="32"
+                        Margin="0,0,5,0"
+                        Click="Mode2LRButton_Click"
+                        Content="2LR" />
                 </StackPanel>
 
                 <!--  タイトル  -->

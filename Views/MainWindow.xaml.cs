@@ -5,11 +5,17 @@ using System.Windows;
 
 namespace IMV.Views;
 
+/// <summary>
+/// メインウィンドウ
+/// </summary>
 public partial class MainWindow : Window
 {
     private MainWindowViewModel _vm = new MainWindowViewModel();
     private ImageWindow? _imageWindow;
 
+    /// <summary>
+    /// コンストラクタ
+    /// </summary>
     public MainWindow()
     {
         InitializeComponent();
@@ -29,6 +35,10 @@ public partial class MainWindow : Window
         folderTreeColumn.Width = new GridLength(config.TreeColumnWidth);
     }
 
+    /// <summary>
+    /// ウィンドウクローズ時
+    /// </summary>
+    /// <param name="e">イベント引数</param>
     protected override void OnClosing(CancelEventArgs e)
     {
         _imageWindow?.Close();
@@ -42,10 +52,14 @@ public partial class MainWindow : Window
             : _vm.SelectedTreePath;
         IMVConfig.Shared.Save(config);
 
+        // ユーザーコントロール開放
+        folderTree.Dispose();
+        thumbnailList.Dispose();
+
         base.OnClosing(e);
     }
 
-    private async void thumbnailList_ItemDoubleClick(object sender, RadianTools.UI.WPF.Controls.ThumbnailItemEventArgs e)
+    private async void OnThumbnailDoubleClick(object sender, RadianTools.UI.WPF.Controls.ThumbnailItemEventArgs e)
     {
         if (_imageWindow == null)
         {
@@ -67,5 +81,17 @@ public partial class MainWindow : Window
             _imageWindow.Show();
 
         _imageWindow.Activate();
+    }
+
+    private async void OnSelectedFolderChanged(object sender, RadianTools.UI.WPF.Controls.FolderItemEventArgs e)
+    {
+        if (_imageWindow == null)
+            return;
+        
+        _vm.ViewState.SelectedThumbnailIndex = 0;
+
+        await _imageWindow.ShowImagesAsync(
+            thumbnailList.Items,
+            _vm.ViewState);
     }
 }

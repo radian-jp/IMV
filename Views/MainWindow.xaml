@@ -21,6 +21,7 @@
             x:Name="folderTree"
             Grid.Column="0"
             SelectedItem="{Binding SelectedFolder}"
+            SelectedItemChanged="OnSelectedFolderChanged"
             SelectedTreePath="{Binding SelectedTreePath, Mode=TwoWay}" />
 
         <!--  中央: GridSplitter  -->
@@ -37,7 +38,7 @@
             x:Name="thumbnailList"
             Grid.Column="2"
             Folder="{Binding SelectedFolder.FilePath}"
-            ItemDoubleClick="thumbnailList_ItemDoubleClick"
+            ItemDoubleClick="OnThumbnailDoubleClick"
             SelectedIndex="{Binding ViewState.SelectedThumbnailIndex, Mode=TwoWay}" />
 
     </Grid>

@@ -13,5 +13,5 @@ public class IMVConfig
 
     // ImageWindow設定
     public WindowInfo ImageWindowInfo { get; set; } = new WindowInfo();
-    public ImageWindowPageMode ImageWindowPageMode { get; set; } = ImageWindowPageMode.Double;
+    public ImageWindowPageMode ImageWindowPageMode { get; set; } = ImageWindowPageMode.DoubleRL;
 }

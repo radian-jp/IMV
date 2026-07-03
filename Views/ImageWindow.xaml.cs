@@ -8,6 +8,7 @@ using RadianTools.UI.WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Security.Policy;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -26,7 +27,18 @@ public enum ImageWindowPageMode
 public partial class ImageWindow : Window
 {
     private IReadOnlyList<ThumbnailItemViewModel> _items = Array.Empty<ThumbnailItemViewModel>();
+
+    public ImageWindowPageMode PageMode
+    {
+        get => _pageMode;
+        private set
+        {
+            _pageMode = value;
+            OnPageModeChanged(value);
+        }
+    }
     private ImageWindowPageMode _pageMode = ImageWindowPageMode.DoubleRL;
+
     private int _loadVersion;
     private CancellationTokenSource? _loadCts;
     private ImageViewState? _imageViewState;
@@ -46,7 +58,7 @@ public partial class ImageWindow : Window
 
         // ウィンドウ状態を復元
         config.ImageWindowInfo.Restore(this);
-        _pageMode = config.ImageWindowPageMode;
+        PageMode = config.ImageWindowPageMode;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -54,7 +66,7 @@ public partial class ImageWindow : Window
         // 現在の状態を Config オブジェクトに格納
         var config = IMVConfig.Shared.Load();
         config.ImageWindowInfo = WindowInfo.FromWindow(this);
-        config.ImageWindowPageMode = _pageMode;
+        config.ImageWindowPageMode = PageMode;
         IMVConfig.Shared.Save(config);
 
         base.OnClosing(e);
@@ -78,9 +90,7 @@ public partial class ImageWindow : Window
             return;
         }
 
-        ApplyLayout();
-
-        await UpdateImagesAsync();
+        await RefreshAsync();
     }
 
     /// <summary>
@@ -93,7 +103,7 @@ public partial class ImageWindow : Window
 
         ThumbnailItemViewModel? right = null;
         ThumbnailItemViewModel? left = null;
-        switch( _pageMode )
+        switch (PageMode)
         {
             case ImageWindowPageMode.Single:
                 left = GetItem(SelectedIndex);
@@ -135,11 +145,11 @@ public partial class ImageWindow : Window
     }
 
     /// <summary>
-    /// レイアウト反映
+    /// ページモードレイアウト反映
     /// </summary>
-    private void ApplyLayout()
+    private void ApplyPageModeLayout(ImageWindowPageMode pageMode)
     {
-        switch (_pageMode)
+        switch (pageMode)
         {
             case ImageWindowPageMode.Single:
                 LeftCol.Width = new GridLength(1, GridUnitType.Star);
@@ -162,7 +172,7 @@ public partial class ImageWindow : Window
         ThumbnailItemViewModel? left,
         bool loading = false)
     {
-        if( left==null && right== null)
+        if (left == null && right == null)
         {
             Title = "";
             return;
@@ -172,11 +182,11 @@ public partial class ImageWindow : Window
         var page = _items.Count == 0 ? 0 : SelectedIndex + 1;
         var strLoading = loading ? " (Loading...)" : "";
 
-        if( left!=null && right!=null )
+        if (left != null && right != null)
         {
             Title = $"({page}, {page + 1} / {total}) L:{left?.DisplayName} R:{right?.DisplayName}{strLoading}";
             return;
-        } 
+        }
         if (left != null)
         {
             Title = $"({page} / {total}) {left?.DisplayName}{strLoading}";
@@ -205,7 +215,7 @@ public partial class ImageWindow : Window
             return;
 
         var diff = 1;
-        switch (_pageMode)
+        switch (PageMode)
         {
             case ImageWindowPageMode.DoubleLR:
             case ImageWindowPageMode.DoubleRL:
@@ -221,7 +231,7 @@ public partial class ImageWindow : Window
     private async Task PrevAsync()
     {
         var diff = 1;
-        switch(_pageMode)
+        switch (PageMode)
         {
             case ImageWindowPageMode.DoubleLR:
             case ImageWindowPageMode.DoubleRL:
@@ -242,17 +252,21 @@ public partial class ImageWindow : Window
             return;
 
         SelectedIndex = next;
-        StartNewLoad();
-        await UpdateImagesAsync();
+        await RefreshAsync();
     }
 
-    private void StartNewLoad()
+    /// <summary>
+    /// 再描画
+    /// </summary>
+    private async Task RefreshAsync()
     {
+        //バージョンを更新し、以前のロードをキャンセル
         Interlocked.Increment(ref _loadVersion);
-
         _loadCts?.Cancel();
         _loadCts?.Dispose();
         _loadCts = new CancellationTokenSource();
+
+        await UpdateImagesAsync();
     }
 
     /// <summary>
@@ -361,23 +375,24 @@ public partial class ImageWindow : Window
 
     private async void Mode1Button_Click(object sender, RoutedEventArgs e)
     {
-        _pageMode = ImageWindowPageMode.Single;
-        ApplyLayout();
-        await UpdateImagesAsync();
+        PageMode = ImageWindowPageMode.Single;
+        await RefreshAsync();
     }
 
     private async void Mode2RLButton_Click(object sender, RoutedEventArgs e)
     {
-        _pageMode = ImageWindowPageMode.DoubleRL;
-        ApplyLayout();
-        await UpdateImagesAsync();
+        PageMode = ImageWindowPageMode.DoubleRL;
+        await RefreshAsync();
     }
-
 
     private async void Mode2LRButton_Click(object sender, RoutedEventArgs e)
     {
-        _pageMode = ImageWindowPageMode.DoubleLR;
-        ApplyLayout();
-        await UpdateImagesAsync();
+        PageMode = ImageWindowPageMode.DoubleLR;
+        await RefreshAsync();
+    }
+
+    private void OnPageModeChanged(ImageWindowPageMode newValue)
+    {
+        ApplyPageModeLayout(newValue);
     }
 }

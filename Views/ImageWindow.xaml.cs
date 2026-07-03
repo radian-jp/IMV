@@ -1,6 +1,7 @@
 ﻿namespace IMV.Views;
 
 using IMV.Config;
+using IMV.IO;
 using IMV.State;
 using RadianTools.UI.WPF.Imaging;
 using RadianTools.UI.WPF.IO;
@@ -8,9 +9,11 @@ using RadianTools.UI.WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Security.Policy;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -42,6 +45,8 @@ public partial class ImageWindow : Window
     private int _loadVersion;
     private CancellationTokenSource? _loadCts;
     private ImageViewState? _imageViewState;
+    private ThumbnailItemViewModel? _currentLeft;
+    private ThumbnailItemViewModel? _currentRight;
 
     private int SelectedIndex
     {
@@ -140,6 +145,9 @@ public partial class ImageWindow : Window
 
         LeftImage.Source = leftImg;
         RightImage.Source = rightImg;
+
+        _currentLeft = left;
+        _currentRight = right;
 
         UpdateTitle(right, left);
     }
@@ -394,5 +402,62 @@ public partial class ImageWindow : Window
     private void OnPageModeChanged(ImageWindowPageMode newValue)
     {
         ApplyPageModeLayout(newValue);
+    }
+
+    private async Task OpenWithAssociatedAppAsync(IFileEntry entry)
+    {
+        try
+        {
+            string path = entry.LogicalPath;
+
+            // すでに実ファイルならそのまま
+            if (File.Exists(path))
+            {
+                Process.Start(new ProcessStartInfo(path)
+                {
+                    UseShellExecute = true
+                });
+                return;
+            }
+
+            // ZIP内部など → テンポラリ展開
+            var tempPath = await TempFileManager.Shared.CreateFromEntryAsync(entry);
+            await using (var stream = await entry.OpenReadAsync())
+            await using (var fs = File.Create(tempPath))
+            {
+                await stream.CopyToAsync(fs);
+            }
+
+            Process.Start(new ProcessStartInfo(tempPath)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Open Error");
+        }
+    }
+
+    private void Image_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        var image = (FrameworkElement)sender;
+
+        var menu = new ContextMenu();
+
+        var openItem = new MenuItem { Header = "関連付けで開く" };
+        openItem.Click += async (_, __) =>
+        {
+            var vm = image == LeftImage
+                ? _currentLeft
+                : _currentRight;
+
+            if (vm?.FileEntry != null)
+                await OpenWithAssociatedAppAsync(vm.FileEntry);
+        };
+
+        menu.Items.Add(openItem);
+        image.ContextMenu = menu;
+        menu.IsOpen = true;
     }
 }

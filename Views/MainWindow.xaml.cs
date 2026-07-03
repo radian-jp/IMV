@@ -1,4 +1,5 @@
 ﻿using IMV.Config;
+using IMV.IO;
 using IMV.ViewModels;
 using System.ComponentModel;
 using System.Windows;
@@ -55,6 +56,9 @@ public partial class MainWindow : Window
         // ユーザーコントロール開放
         folderTree.Dispose();
         thumbnailList.Dispose();
+
+        // テンポラリファイルとフォルダ削除
+        TempFileManager.Shared.Cleanup();
 
         base.OnClosing(e);
     }

@@ -78,6 +78,7 @@
                 BorderThickness="1">
                 <Image
                     x:Name="LeftImage"
+                    MouseRightButtonUp="Image_MouseRightButtonUp"
                     RenderOptions.BitmapScalingMode="Fant"
                     Stretch="Uniform" />
             </Border>
@@ -88,6 +89,7 @@
                 BorderThickness="1">
                 <Image
                     x:Name="RightImage"
+                    MouseRightButtonUp="Image_MouseRightButtonUp"
                     RenderOptions.BitmapScalingMode="Fant"
                     Stretch="Uniform" />
             </Border>

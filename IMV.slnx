@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../RadianTools.Interop.Windows/src/RadianTools.Interop.Windows/RadianTools.Interop.Windows.csproj" />
+  <Project Path="../RadianTools.UI.WPF/src/RadianTools.UI.WPF/RadianTools.UI.WPF.csproj" />
+  <Project Path="IMV.csproj" />
+</Solution>

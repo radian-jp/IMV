@@ -27,18 +27,16 @@ public sealed class TempFileManager
         IFileEntry entry,
         CancellationToken token = default)
     {
-        var ext = Path.GetExtension(entry.DisplayName);
-
         await using var stream = await entry.OpenReadAsync(token);
-        return await CreateFileAsync(ext, stream, token);
+        return await CreateFileAsync(entry, stream, token);
     }
 
     private async Task<string> CreateFileAsync(
-    string extension,
-    Stream source,
-    CancellationToken token = default)
+        IFileEntry entry,
+        Stream source,
+        CancellationToken token = default)
     {
-        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var fileName = $"{DateTime.Now.Ticks}_{entry.DisplayName}";
         var path = Path.Combine(_root, fileName);
 
         await using (var fs = File.Create(path))

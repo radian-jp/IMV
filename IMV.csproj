@@ -22,7 +22,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="icon\page1.png" />
+    <None Remove="icon\page1_2.png" />
+    <None Remove="icon\page2_1.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="icon\imv.ico" />
+    <Resource Include="icon\page1.png" />
+    <Resource Include="icon\page1_2.png" />
+    <Resource Include="icon\page2_1.png" />
   </ItemGroup>
 
   <ItemGroup>

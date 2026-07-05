@@ -36,7 +36,25 @@ public partial class ImageWindow : Window
         get => _pageMode;
         private set
         {
+            if (value == _pageMode)
+                return;
+
             _pageMode = value;
+            switch(_pageMode)
+            {
+                case ImageWindowPageMode.Single:
+                    ButtonPageModeSingle.IsChecked = true;
+                    break;
+
+                case ImageWindowPageMode.DoubleRL:
+                    ButtonPageModeDoubleRL.IsChecked = true;
+                    break;
+
+                case ImageWindowPageMode.DoubleLR:
+                    ButtonPageModeDoubleLR.IsChecked = true;
+                    break;
+            }
+
             OnPageModeChanged(value);
         }
     }
@@ -47,6 +65,7 @@ public partial class ImageWindow : Window
     private ImageViewState? _imageViewState;
     private ThumbnailItemViewModel? _currentLeft;
     private ThumbnailItemViewModel? _currentRight;
+    private static IImageFactory _imageFactory = RsImageFactory.Shared;
 
     private int SelectedIndex
     {
@@ -346,8 +365,6 @@ public partial class ImageWindow : Window
         return index;
     }
 
-    private static IImageFactory _imageFactory = RsImageFactory.Shared;
-
     /// <summary>
     /// 画像ロード
     /// </summary>
@@ -381,21 +398,15 @@ public partial class ImageWindow : Window
         }
     }
 
-    private async void Mode1Button_Click(object sender, RoutedEventArgs e)
+    private async void ButtonPageMode_Click(object sender, RoutedEventArgs e)
     {
-        PageMode = ImageWindowPageMode.Single;
-        await RefreshAsync();
-    }
+        if (sender is not RadioButton rb)
+            return;
 
-    private async void Mode2RLButton_Click(object sender, RoutedEventArgs e)
-    {
-        PageMode = ImageWindowPageMode.DoubleRL;
-        await RefreshAsync();
-    }
+        if (rb.Tag is not ImageWindowPageMode mode)
+            return;
 
-    private async void Mode2LRButton_Click(object sender, RoutedEventArgs e)
-    {
-        PageMode = ImageWindowPageMode.DoubleLR;
+        PageMode = mode;
         await RefreshAsync();
     }
 

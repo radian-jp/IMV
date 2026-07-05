@@ -1,8 +1,8 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿namespace IMV.ViewModels;
+
+using CommunityToolkit.Mvvm.ComponentModel;
 using IMV.State;
 using RadianTools.UI.WPF.Common;
-
-namespace IMV.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {

@@ -34,4 +34,4 @@ jpeg, png, gif(アニメーション不可), bmp, tif, webp, dds, avif
 - サムネイルサイズ変更
 - フォント変更対応
 
-<img width="1610" height="1132" alt="image" src="https://github.com/user-attachments/assets/9e71bd73-92ec-4d20-a1d8-2a1b28dfc0d4" />
+<img width="1774" height="1234" alt="image" src="https://github.com/user-attachments/assets/a0737b89-5fae-484f-ba76-2694d5fd2527" />

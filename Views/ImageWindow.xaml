@@ -5,7 +5,8 @@
     xmlns:local="clr-namespace:IMV.Views"
     Title="Image Viewer"
     Width="1200"
-    Height="800">
+    Height="800"
+    Loaded="OnLoad">
 
     <Window.Resources>
         <Style TargetType="RadioButton">
@@ -38,7 +39,6 @@
             </Setter>
         </Style>
 
-        <!--  ★ここからSlider  -->
         <Style TargetType="Slider">
 
             <Setter Property="Height" Value="20" />
@@ -64,7 +64,7 @@
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton
                                         Height="4"
-                                        Background="#4CAF50"
+                                        Background="#77aaee"
                                         BorderThickness="0" />
                                 </Track.DecreaseRepeatButton>
 
@@ -79,10 +79,16 @@
                                 <!--  Thumb  -->
                                 <Track.Thumb>
                                     <Thumb
-                                        Width="12"
-                                        Height="12"
-                                        Background="#FFD966"
-                                        BorderThickness="0" />
+                                        Width="10"
+                                        Height="10"
+                                        BorderThickness="0">
+
+                                        <Thumb.Template>
+                                            <ControlTemplate>
+                                                <Ellipse Fill="DodgerBlue" />
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
                                 </Track.Thumb>
 
                             </Track>
@@ -105,14 +111,14 @@
         </Grid.RowDefinitions>
 
         <!--  上部情報バー  -->
-        <Border
-            Grid.Row="0"
-            Padding="0"
-            Background="Gainsboro"
-            BorderBrush="DarkGray"
-            BorderThickness="1">
+        <Grid Grid.Row="0" Background="Gainsboro">
 
-            <StackPanel Orientation="Horizontal">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
 
                 <!--  モード切替ボタン  -->
                 <StackPanel Orientation="Horizontal">
@@ -156,24 +162,26 @@
                     BorderBrush="DarkGray"
                     BorderThickness="1" />
 
-                <!--  シークバー領域  -->
-                <StackPanel
-                    Margin="5,0"
-                    VerticalAlignment="Center"
-                    Orientation="Horizontal">
-
-                    <!--  シークバー  -->
-                    <Slider
-                        x:Name="PageSlider"
-                        Width="300"
-                        LargeChange="5"
-                        Minimum="1"
-                        SmallChange="1"
-                        Visibility="Hidden" />
-
-                </StackPanel>
             </StackPanel>
-        </Border>
+
+            <!--  シークバー  -->
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Slider
+                    x:Name="PageSlider"
+                    Grid.Column="0"
+                    HorizontalAlignment="Stretch"
+                    IsMoveToPointEnabled="True"
+                    LargeChange="5"
+                    Minimum="0"
+                    SmallChange="1"
+                    ValueChanged="PageSlider_ValueChanged" />
+            </Grid>
+
+        </Grid>
 
         <!--  画像表示  -->
         <Grid Grid.Row="1">

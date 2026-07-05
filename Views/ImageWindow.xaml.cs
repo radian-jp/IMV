@@ -16,6 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 public enum ImageWindowPageMode
 {
@@ -29,6 +30,8 @@ public enum ImageWindowPageMode
 
 public partial class ImageWindow : Window
 {
+    private record struct CurrentPages(ThumbnailItemViewModel? Left, ThumbnailItemViewModel? Right);
+
     private IReadOnlyList<ThumbnailItemViewModel> _items = Array.Empty<ThumbnailItemViewModel>();
 
     public ImageWindowPageMode PageMode
@@ -40,7 +43,7 @@ public partial class ImageWindow : Window
                 return;
 
             _pageMode = value;
-            switch(_pageMode)
+            switch (_pageMode)
             {
                 case ImageWindowPageMode.Single:
                     ButtonPageModeSingle.IsChecked = true;
@@ -66,6 +69,13 @@ public partial class ImageWindow : Window
     private ThumbnailItemViewModel? _currentLeft;
     private ThumbnailItemViewModel? _currentRight;
     private static IImageFactory _imageFactory = RsImageFactory.Shared;
+    private bool _updatingSlider = false;
+    private bool _initialized = false;
+
+    private readonly DispatcherTimer _delayPageLoadTimer =
+        new() { Interval = TimeSpan.FromMilliseconds(100) };
+
+    private int _delayLoadPageIndex = -1;
 
     private int SelectedIndex
     {
@@ -76,13 +86,20 @@ public partial class ImageWindow : Window
     public ImageWindow()
     {
         InitializeComponent();
+    }
 
+    private void OnLoad(object sender, RoutedEventArgs e)
+    {
         // 設定の読み込み
         var config = IMVConfig.Shared.Load();
 
         // ウィンドウ状態を復元
         config.ImageWindowInfo.Restore(this);
         PageMode = config.ImageWindowPageMode;
+
+        _delayPageLoadTimer.Tick += OnDelayPageLoadStart;
+
+        _initialized = true;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -96,6 +113,27 @@ public partial class ImageWindow : Window
         base.OnClosing(e);
     }
 
+    private void BeginDelayPageLoad(int index)
+    {
+        _delayLoadPageIndex = index;
+
+        // タイトル更新（ロード開始）
+        var pages = GetCurrentPageViewModel(index);
+        UpdateTitle(index, pages, true);
+
+        _delayPageLoadTimer.Stop();
+        _delayPageLoadTimer.Start();
+    }
+
+    protected async void OnDelayPageLoadStart(object? sender, EventArgs e)
+    {
+        var page = Interlocked.Exchange(ref _delayLoadPageIndex, -1);
+        if (page < 0)
+            return;
+
+        await SetPageIndexAsync(page);
+    }
+
     /// <summary>
     /// 外部から表示開始
     /// </summary>
@@ -105,12 +143,13 @@ public partial class ImageWindow : Window
     {
         _items = items ?? Array.Empty<ThumbnailItemViewModel>();
         _imageViewState = imageViewState;
+        PageSlider.Maximum = (int)_items.Count - 1;
 
         if (_items.Count == 0)
         {
             SelectedIndex = 0;
             await ClearAsync();
-            UpdateTitle(null, null);
+            UpdateTitle(0, null);
             return;
         }
 
@@ -120,32 +159,13 @@ public partial class ImageWindow : Window
     /// <summary>
     /// 画像更新
     /// </summary>
-    private async Task UpdateImagesAsync()
+    private async Task UpdateImagesAsync(int index, CurrentPages pages)
     {
         var token = _loadCts?.Token ?? CancellationToken.None;
         var version = _loadVersion;
 
-        ThumbnailItemViewModel? right = null;
-        ThumbnailItemViewModel? left = null;
-        switch (PageMode)
-        {
-            case ImageWindowPageMode.Single:
-                left = GetItem(SelectedIndex);
-                break;
-
-            case ImageWindowPageMode.DoubleRL:
-                left = GetItem(SelectedIndex + 1);
-                right = GetItem(SelectedIndex);
-                break;
-
-            case ImageWindowPageMode.DoubleLR:
-                left = GetItem(SelectedIndex);
-                right = GetItem(SelectedIndex + 1);
-                break;
-
-        }
-
-        UpdateTitle(right, left, true);
+        var left = pages.Left;
+        var right = pages.Right;
 
         var rightTask = (right != null)
             ? LoadImageAsync(right, token)
@@ -168,7 +188,8 @@ public partial class ImageWindow : Window
         _currentLeft = left;
         _currentRight = right;
 
-        UpdateTitle(right, left);
+        // タイトル更新（ロード完了）
+        UpdateTitle(index, pages);
     }
 
     /// <summary>
@@ -194,24 +215,31 @@ public partial class ImageWindow : Window
     /// <summary>
     /// タイトル更新
     /// </summary>
-    private void UpdateTitle(
-        ThumbnailItemViewModel? right,
-        ThumbnailItemViewModel? left,
-        bool loading = false)
+    private void UpdateTitle(int currentIndex, CurrentPages? pages, bool loading = false)
     {
-        if (left == null && right == null)
+        if (!pages.HasValue)
         {
             Title = "";
             return;
         }
 
+        var left = pages.Value.Left;
+        var right = pages.Value.Right;
+
         var total = _items.Count;
-        var page = _items.Count == 0 ? 0 : SelectedIndex + 1;
+        var page = _items.Count == 0 ? 0 : currentIndex + 1;
         var strLoading = loading ? " (Loading...)" : "";
 
         if (left != null && right != null)
         {
-            Title = $"({page}, {page + 1} / {total}) L:{left?.DisplayName} R:{right?.DisplayName}{strLoading}";
+            if (PageMode == ImageWindowPageMode.DoubleLR)
+            {
+                Title = $"({page}, {page + 1} / {total}) L:{left?.DisplayName} R:{right?.DisplayName}{strLoading}";
+            }
+            else
+            {
+                Title = $"({page + 1}, {page} / {total}) L:{left?.DisplayName} R:{right?.DisplayName}{strLoading}";
+            }
             return;
         }
         if (left != null)
@@ -282,6 +310,30 @@ public partial class ImageWindow : Window
         await RefreshAsync();
     }
 
+    private CurrentPages GetCurrentPageViewModel(int index)
+    {
+        ThumbnailItemViewModel? right = null;
+        ThumbnailItemViewModel? left = null;
+        switch (PageMode)
+        {
+            case ImageWindowPageMode.Single:
+                left = GetItem(index);
+                break;
+
+            case ImageWindowPageMode.DoubleRL:
+                left = GetItem(index + 1);
+                right = GetItem(index);
+                break;
+
+            case ImageWindowPageMode.DoubleLR:
+                left = GetItem(index);
+                right = GetItem(index + 1);
+                break;
+        }
+
+        return new CurrentPages(left, right);
+    }
+
     /// <summary>
     /// 再描画
     /// </summary>
@@ -293,7 +345,16 @@ public partial class ImageWindow : Window
         _loadCts?.Dispose();
         _loadCts = new CancellationTokenSource();
 
-        await UpdateImagesAsync();
+        var index = SelectedIndex;
+
+        UpdateSlider(index);
+
+        var pages = GetCurrentPageViewModel(index);
+
+        // タイトル更新（ロード開始）
+        UpdateTitle(index, pages, true);
+
+        await UpdateImagesAsync(index, pages);
     }
 
     /// <summary>
@@ -415,60 +476,34 @@ public partial class ImageWindow : Window
         ApplyPageModeLayout(newValue);
     }
 
-    private async Task OpenWithAssociatedAppAsync(IFileEntry entry)
+    private void UpdateSlider(int value)
     {
-        try
-        {
-            string path = entry.LogicalPath;
-
-            // すでに実ファイルならそのまま
-            if (File.Exists(path))
-            {
-                Process.Start(new ProcessStartInfo(path)
-                {
-                    UseShellExecute = true
-                });
-                return;
-            }
-
-            // ZIP内部など → テンポラリ展開
-            var tempPath = await TempFileManager.Shared.CreateFromEntryAsync(entry);
-            await using (var stream = await entry.OpenReadAsync())
-            await using (var fs = File.Create(tempPath))
-            {
-                await stream.CopyToAsync(fs);
-            }
-
-            Process.Start(new ProcessStartInfo(tempPath)
-            {
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Open Error");
-        }
+        _updatingSlider = true;
+        PageSlider.Value = value;
+        _updatingSlider = false;
     }
 
     private void Image_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
         var image = (FrameworkElement)sender;
+        var vm = image == LeftImage
+            ? _currentLeft
+            : _currentRight;
+        if (vm == null)
+            return;
 
-        var menu = new ContextMenu();
+        if( image.ContextMenu == null)
+            image.ContextMenu = ImageContextMenu.Shared;
 
-        var openItem = new MenuItem { Header = "関連付けで開く" };
-        openItem.Click += async (_, __) =>
-        {
-            var vm = image == LeftImage
-                ? _currentLeft
-                : _currentRight;
+        var menu = (ImageContextMenu)image.ContextMenu!;
+        menu.Show(vm);
+    }
 
-            if (vm?.FileEntry != null)
-                await OpenWithAssociatedAppAsync(vm.FileEntry);
-        };
+    private async void PageSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_initialized || !IsVisible || _updatingSlider)
+            return;
 
-        menu.Items.Add(openItem);
-        image.ContextMenu = menu;
-        menu.IsOpen = true;
+        BeginDelayPageLoad((int)e.NewValue);
     }
 }

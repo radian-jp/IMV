@@ -98,4 +98,17 @@ public partial class MainWindow : Window
             thumbnailList.Items,
             _vm.ViewState);
     }
+
+    private void thumbnailList_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (thumbnailList.SelectedIndex < 0)
+            return;
+
+        if (thumbnailList.ContextMenu == null)
+            thumbnailList.ContextMenu = ImageContextMenu.Shared;
+
+        var vm = thumbnailList.Items[thumbnailList.SelectedIndex];
+        var menu = (ImageContextMenu)thumbnailList.ContextMenu!;
+        menu.Show(vm);
+    }
 }

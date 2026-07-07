@@ -9,8 +9,8 @@
     <Company>RadianTools</Company>
     <Authors>radian</Authors>
     <ApplicationIcon>icon\imv.ico</ApplicationIcon>
-    <AssemblyVersion>0.0.2</AssemblyVersion>
-    <FileVersion>0.0.2</FileVersion>
+    <AssemblyVersion>0.0.3</AssemblyVersion>
+    <FileVersion>0.0.3</FileVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -46,6 +46,27 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RadianTools.UI.WPF\src\RadianTools.UI.WPF\RadianTools.UI.WPF.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="third-party-licenses\CommunityToolkit.Mvvm_license.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="third-party-licenses\DependencyPropertyGenerator_license.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="third-party-licenses\libjpeg-turbo-license.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="third-party-licenses\rsimage-third-party-licenses.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="third-party-licenses\VirtualizingWrapPanel_license.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="third-party-licenses\XamlAnimatedGif_license.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

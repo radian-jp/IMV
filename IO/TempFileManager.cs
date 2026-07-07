@@ -4,12 +4,16 @@ using RadianTools.UI.WPF.IO;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 public sealed class TempFileManager
 {
     private const string TempFolderName = "IMV_TempFiles";
+
     private readonly string _root;
     private readonly ConcurrentBag<string> _files = new();
+    private readonly ConcurrentDictionary<string, Lazy<Task<string>>> _cache =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public static TempFileManager Shared { get; } = new TempFileManager();
 
@@ -27,17 +31,35 @@ public sealed class TempFileManager
         IFileEntry entry,
         CancellationToken token = default)
     {
-        await using var stream = await entry.OpenReadAsync(token);
-        return await CreateFileAsync(entry, stream, token);
+        var key = entry.LogicalPath;
+
+        while (true)
+        {
+            var lazy = _cache.GetOrAdd(
+                key,
+                _ => new Lazy<Task<string>>(
+                    () => CreateFileFromEntryAsync(entry, token),
+                    LazyThreadSafetyMode.ExecutionAndPublication));
+
+            var path = await lazy.Value;
+
+            if (File.Exists(path))
+                return path;
+
+            // 消えていた場合はキャッシュ破棄
+            _cache.TryRemove(
+                new KeyValuePair<string, Lazy<Task<string>>>(key, lazy));
+        }
     }
 
-    private async Task<string> CreateFileAsync(
+    private async Task<string> CreateFileFromEntryAsync(
         IFileEntry entry,
-        Stream source,
-        CancellationToken token = default)
+        CancellationToken token)
     {
         var fileName = $"{DateTime.Now.Ticks}_{entry.DisplayName}";
         var path = Path.Combine(_root, fileName);
+
+        await using var source = await entry.OpenReadAsync(token);
 
         await using (var fs = File.Create(path))
         {
@@ -45,11 +67,14 @@ public sealed class TempFileManager
         }
 
         _files.Add(path);
+
         return path;
     }
 
     public void Cleanup()
     {
+        _cache.Clear();
+
         if (!Directory.Exists(_root))
             return;
 
@@ -61,7 +86,6 @@ public sealed class TempFileManager
         }
         catch
         {
-            // fallback
         }
 
         // 個別削除
@@ -72,7 +96,9 @@ public sealed class TempFileManager
                 File.SetAttributes(file, FileAttributes.Normal);
                 File.Delete(file);
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         // もう一度フォルダ削除
@@ -80,6 +106,8 @@ public sealed class TempFileManager
         {
             Directory.Delete(_root, recursive: true);
         }
-        catch { }
+        catch
+        {
+        }
     }
 }

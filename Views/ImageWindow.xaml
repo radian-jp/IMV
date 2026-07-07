@@ -194,22 +194,18 @@
                 Grid.Column="0"
                 BorderBrush="Gray"
                 BorderThickness="1">
-                <Image
+                <local:MediaViewerControl
                     x:Name="LeftImage"
-                    MouseRightButtonUp="Image_MouseRightButtonUp"
-                    RenderOptions.BitmapScalingMode="Fant"
-                    Stretch="Uniform" />
+                    MouseRightButtonUp="Image_MouseRightButtonUp" />
             </Border>
 
             <Border
                 Grid.Column="2"
                 BorderBrush="Gray"
                 BorderThickness="1">
-                <Image
+                <local:MediaViewerControl
                     x:Name="RightImage"
-                    MouseRightButtonUp="Image_MouseRightButtonUp"
-                    RenderOptions.BitmapScalingMode="Fant"
-                    Stretch="Uniform" />
+                    MouseRightButtonUp="Image_MouseRightButtonUp" />
             </Border>
         </Grid>
     </Grid>

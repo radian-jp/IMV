@@ -81,9 +81,6 @@ public partial class MainWindow : Window
             thumbnailList.Items,
             _vm.ViewState);
 
-        if (!_imageWindow.IsVisible)
-            _imageWindow.Show();
-
         _imageWindow.Activate();
     }
 

@@ -3,6 +3,7 @@
 using IMV.Config;
 using IMV.IO;
 using IMV.State;
+using RadianTools.UI.WPF.Extentions;
 using RadianTools.UI.WPF.Imaging;
 using RadianTools.UI.WPF.IO;
 using RadianTools.UI.WPF.ViewModels;
@@ -110,6 +111,9 @@ public partial class ImageWindow : Window
         config.ImageWindowPageMode = PageMode;
         IMVConfig.Shared.Save(config);
 
+        LeftImage.Clear();
+        RightImage.Clear();
+
         base.OnClosing(e);
     }
 
@@ -141,6 +145,9 @@ public partial class ImageWindow : Window
         IReadOnlyList<ThumbnailItemViewModel> items,
         ImageViewState imageViewState)
     {
+        if( !IsVisible )
+            this.Show();
+
         _items = items ?? Array.Empty<ThumbnailItemViewModel>();
         _imageViewState = imageViewState;
         PageSlider.Maximum = (int)_items.Count - 1;
@@ -167,23 +174,12 @@ public partial class ImageWindow : Window
         var left = pages.Left;
         var right = pages.Right;
 
-        var rightTask = (right != null)
-            ? LoadImageAsync(right, token)
-            : Task.FromResult<ImageSource?>(null);
-
-        var leftTask = (left != null)
-            ? LoadImageAsync(left, token)
-            : Task.FromResult<ImageSource?>(null);
-
-        var rightImg = await rightTask;
-        var leftImg = await leftTask;
-
         // 古い結果なら破棄
         if (version != _loadVersion)
             return;
 
-        LeftImage.Source = leftImg;
-        RightImage.Source = rightImg;
+        await LeftImage.ShowAsync(left, token);
+        await RightImage.ShowAsync(right, token);
 
         _currentLeft = left;
         _currentRight = right;
@@ -256,8 +252,8 @@ public partial class ImageWindow : Window
     /// </summary>
     private Task ClearAsync()
     {
-        LeftImage.Source = null;
-        RightImage.Source = null;
+        LeftImage.Clear();
+        RightImage.Clear();
         return Task.CompletedTask;
     }
 

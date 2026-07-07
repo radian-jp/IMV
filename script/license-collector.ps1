@@ -16,13 +16,13 @@
 
 param(
     # 対象csproj（未指定ならカレントから自動検出）
-    [string]$CsprojPath = "",
+    [string]$CsprojPath = "../IMV.csproj",
     
     # singleモード時の出力ファイル
-    [string]$OutputFile = ".\THIRD_PARTY_LICENSES.md",
+    [string]$OutputFile = "..\THIRD_PARTY_LICENSES.md",
     
     # splitモード時の出力ディレクトリ
-    [string]$OutputDir = ".\third-party-licenses",
+    [string]$OutputDir = "..\third-party-licenses",
 
     # GitHub APIトークン（レート制限対策）
     [string]$GitHubToken = $env:GITHUB_TOKEN,

@@ -5,7 +5,7 @@
 自分の欲しい機能のみ実装するつもりで、フル機能のカバーまでは目指しません。
 
 ## 対応画像形式
-jpeg, png, gif(アニメーション不可), bmp, tif, webp, dds
+jpeg, png, gif(アニメーション不可), bmp, tif, webp, dds, avif
 
 ## 基本操作
 メインウィンドウ左側にフォルダツリーが表示され、フォルダをクリックすると右側にサムネイル一覧が表示されます。
@@ -29,10 +29,9 @@ jpeg, png, gif(アニメーション不可), bmp, tif, webp, dds
 
 ## 対応したい事リスト（可能であれば）
 - pdf表示
-- avif表示
 - サムネイル一覧のソート順変更
 - 作成したサムネイルを保存し、二回目以降の表示の高速化
 - サムネイルサイズ変更
 - フォント変更対応
 
-<img width="1610" height="1132" alt="image" src="https://github.com/user-attachments/assets/9e71bd73-92ec-4d20-a1d8-2a1b28dfc0d4" />
+<img width="1774" height="1234" alt="image" src="https://github.com/user-attachments/assets/a0737b89-5fae-484f-ba76-2694d5fd2527" />

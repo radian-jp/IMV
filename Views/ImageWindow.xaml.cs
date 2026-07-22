@@ -1,26 +1,21 @@
 ﻿namespace IMV.Views;
 
 using IMV.Config;
-using IMV.IO;
 using IMV.State;
-using RadianTools.UI.WPF.Extentions;
-using RadianTools.UI.WPF.Imaging;
-using RadianTools.UI.WPF.IO;
 using RadianTools.UI.WPF.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Threading;
 
 public enum ImageWindowPageMode
 {
+    /// <summary>未設定</summary>
+    NotSet,
     /// <summary>1ページ</summary>
     Single = 1,
     /// <summary>2ページ(右→左)</summary>
@@ -48,29 +43,30 @@ public partial class ImageWindow : Window
             {
                 case ImageWindowPageMode.Single:
                     ButtonPageModeSingle.IsChecked = true;
+                    PageSlider.SmallChange = 1;
                     break;
 
                 case ImageWindowPageMode.DoubleRL:
                     ButtonPageModeDoubleRL.IsChecked = true;
+                    PageSlider.SmallChange = 2;
                     break;
 
                 case ImageWindowPageMode.DoubleLR:
                     ButtonPageModeDoubleLR.IsChecked = true;
+                    PageSlider.SmallChange = 2;
                     break;
             }
 
             OnPageModeChanged(value);
         }
     }
-    private ImageWindowPageMode _pageMode = ImageWindowPageMode.DoubleRL;
+    private ImageWindowPageMode _pageMode = ImageWindowPageMode.NotSet;
 
     private int _loadVersion;
     private CancellationTokenSource? _loadCts;
     private ImageViewState? _imageViewState;
     private ThumbnailItemViewModel? _currentLeft;
     private ThumbnailItemViewModel? _currentRight;
-    private static IImageFactory _imageFactory = RsImageFactory.Shared;
-    private bool _updatingSlider = false;
     private bool _initialized = false;
 
     private readonly DispatcherTimer _delayPageLoadTimer =
@@ -145,9 +141,6 @@ public partial class ImageWindow : Window
         IReadOnlyList<ThumbnailItemViewModel> items,
         ImageViewState imageViewState)
     {
-        if( !IsVisible )
-            this.Show();
-
         _items = items ?? Array.Empty<ThumbnailItemViewModel>();
         _imageViewState = imageViewState;
         PageSlider.Maximum = (int)_items.Count - 1;
@@ -257,52 +250,15 @@ public partial class ImageWindow : Window
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// 次ページ移動
-    /// </summary>
-    private async Task NextAsync()
-    {
-        if (_items.Count == 0)
-            return;
-
-        var diff = 1;
-        switch (PageMode)
-        {
-            case ImageWindowPageMode.DoubleLR:
-            case ImageWindowPageMode.DoubleRL:
-                diff = 2;
-                break;
-        }
-        await SetPageIndexAsync(SelectedIndex + diff);
-    }
-
-    /// <summary>
-    /// 前ページ移動
-    /// </summary>
-    private async Task PrevAsync()
-    {
-        var diff = 1;
-        switch (PageMode)
-        {
-            case ImageWindowPageMode.DoubleLR:
-            case ImageWindowPageMode.DoubleRL:
-                diff = 2;
-                break;
-        }
-        await SetPageIndexAsync(SelectedIndex - diff);
-    }
-
     private async Task SetPageIndexAsync(int index)
     {
         if (_items.Count == 0)
             return;
 
-        var current = SelectedIndex;
-        var next = ClampPageIndex(index);
-        if (current == next)
+        if (SelectedIndex == index)
             return;
 
-        SelectedIndex = next;
+        SelectedIndex = index;
         await RefreshAsync();
     }
 
@@ -343,7 +299,8 @@ public partial class ImageWindow : Window
 
         var index = SelectedIndex;
 
-        UpdateSlider(index);
+        // スライダー位置の同期
+        PageSlider.Value = index;
 
         var pages = GetCurrentPageViewModel(index);
 
@@ -356,18 +313,18 @@ public partial class ImageWindow : Window
     /// <summary>
     /// キーボード操作
     /// </summary>
-    protected override async void OnKeyDown(KeyEventArgs e)
+    protected override async void OnPreviewKeyDown(KeyEventArgs e)
     {
-        base.OnKeyDown(e);
+        base.OnPreviewKeyDown(e);
 
         switch (e.Key)
         {
             case Key.Right:
-                await NextAsync();
+                PageSlider.Value += PageSlider.SmallChange;
                 break;
 
             case Key.Left:
-                await PrevAsync();
+                PageSlider.Value -= PageSlider.SmallChange;
                 break;
 
             case Key.Escape:
@@ -386,9 +343,9 @@ public partial class ImageWindow : Window
         base.OnMouseWheel(e);
 
         if (e.Delta > 0)
-            await PrevAsync();
+            PageSlider.Value -= PageSlider.SmallChange;
         else
-            await NextAsync();
+            PageSlider.Value += PageSlider.SmallChange;
 
         e.Handled = true;
     }
@@ -402,57 +359,6 @@ public partial class ImageWindow : Window
             return null;
 
         return _items[index];
-    }
-
-    /// <summary>
-    /// ページインデックスを指定可能範囲内の値にする
-    /// </summary>
-    private int ClampPageIndex(int index)
-    {
-        if (_items.Count == 0)
-            return 0;
-
-        if (index < 0)
-            return 0;
-
-        var last = _items.Count - 1;
-        if (index > last)
-            return last;
-
-        return index;
-    }
-
-    /// <summary>
-    /// 画像ロード
-    /// </summary>
-    private async Task<ImageSource?> LoadImageAsync(
-        ThumbnailItemViewModel? item,
-        CancellationToken token = default)
-    {
-        try
-        {
-            if (item?.FileEntry == null)
-                return null;
-
-            var version = _loadVersion;
-
-            var bytes = await item.FileEntry.ReadAllBytesAsync(token)
-                .ConfigureAwait(false);
-            if (bytes == null)
-                return null;
-
-            // ここで古い処理を破棄
-            if (version != _loadVersion)
-                return null;
-
-            return await _imageFactory
-                .CreateImageAsync(bytes, token)
-                .ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            return null;
-        }
     }
 
     private async void ButtonPageMode_Click(object sender, RoutedEventArgs e)
@@ -470,13 +376,6 @@ public partial class ImageWindow : Window
     private void OnPageModeChanged(ImageWindowPageMode newValue)
     {
         ApplyPageModeLayout(newValue);
-    }
-
-    private void UpdateSlider(int value)
-    {
-        _updatingSlider = true;
-        PageSlider.Value = value;
-        _updatingSlider = false;
     }
 
     private void Image_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
@@ -497,7 +396,7 @@ public partial class ImageWindow : Window
 
     private async void PageSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (!_initialized || !IsVisible || _updatingSlider)
+        if (!_initialized || !IsVisible)
             return;
 
         BeginDelayPageLoad((int)e.NewValue);

@@ -1,4 +1,5 @@
-﻿using IMV.Config;
+﻿using IMV.Common;
+using IMV.Config;
 using IMV.IO;
 using IMV.ViewModels;
 using System.ComponentModel;
@@ -20,6 +21,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        thumbnailList.ImageFactory = IMVImageFactory.Shared;
 
         this.DataContext = _vm;
         this.thumbnailList.DataContext = _vm;
@@ -77,6 +80,13 @@ public partial class MainWindow : Window
 
         _vm.ViewState.SelectedThumbnailIndex = e.Index;
 
+        if (!_imageWindow.IsVisible)
+        {
+            _imageWindow.Topmost = true;
+            _imageWindow.Show();
+            _imageWindow.Topmost = false;
+        }
+
         await _imageWindow.ShowImagesAsync(
             thumbnailList.Items,
             _vm.ViewState);
@@ -90,6 +100,9 @@ public partial class MainWindow : Window
             return;
         
         _vm.ViewState.SelectedThumbnailIndex = 0;
+
+        if (!_imageWindow.IsVisible)
+            _imageWindow.Show();
 
         await _imageWindow.ShowImagesAsync(
             thumbnailList.Items,

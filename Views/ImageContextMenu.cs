@@ -1,4 +1,5 @@
-﻿using IMV.IO;
+﻿using IMV.Common;
+using IMV.IO;
 using RadianTools.UI.WPF.Imaging;
 using RadianTools.UI.WPF.IO;
 using RadianTools.UI.WPF.Logging;
@@ -16,7 +17,7 @@ public class ImageContextMenu : ContextMenu
 {
     public static ImageContextMenu Shared { get; } = new();
 
-    private static IImageFactory _imageFactory = RsImageFactory.Shared;
+    private static IImageFactory _imageFactory = IMVImageFactory.Shared;
     private ThumbnailItemViewModel? _vm;
 
     public ImageContextMenu()

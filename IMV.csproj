@@ -11,6 +11,8 @@
     <ApplicationIcon>icon\imv.ico</ApplicationIcon>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Version>0.0.3</Version>
+    <Platforms>AnyCPU;x64</Platforms>
+    <StartupObject>IMV.App</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,12 +41,11 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="VirtualizingWrapPanel" Version="2.5.2" />
     <PackageReference Include="XamlAnimatedGif" Version="2.3.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RadianTools.UI.WPF\src\RadianTools.UI.WPF\RadianTools.UI.WPF.csproj" />
+    <ProjectReference Include="..\RadianTools\src\UI.WPF\RadianTools.UI.WPF.csproj" />
   </ItemGroup>
 
   <ItemGroup>

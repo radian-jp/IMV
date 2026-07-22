@@ -1,5 +1,6 @@
 ﻿namespace IMV.Views;
 
+using IMV.Common;
 using IMV.IO;
 using RadianTools.UI.WPF.Imaging;
 using RadianTools.UI.WPF.IO;
@@ -26,7 +27,7 @@ public partial class MediaViewerControl : UserControl
         ".mpg"
     ];
 
-    private readonly IImageFactory _imageFactory = RsImageFactory.Shared;
+    private readonly IImageFactory _imageFactory = IMVImageFactory.Shared;
 
     private ThumbnailItemViewModel? _current;
     private string? _tempFilePath;
@@ -88,7 +89,7 @@ public partial class MediaViewerControl : UserControl
                 return;
             }
 
-            if (ImageFormatDetector.IsGif(bytes))
+            if (MediaFormatDetector.IsGif(bytes))
             {
                 AnimationBehavior.SetSourceStream(
                     PART_Image,

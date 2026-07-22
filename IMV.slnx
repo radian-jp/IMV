@@ -1,5 +1,12 @@
 <Solution>
-  <Project Path="../RadianTools.Interop.Windows/src/RadianTools.Interop.Windows/RadianTools.Interop.Windows.csproj" />
-  <Project Path="../RadianTools.UI.WPF/src/RadianTools.UI.WPF/RadianTools.UI.WPF.csproj" />
-  <Project Path="IMV.csproj" />
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="../RadianTools/src/UI.WPF/RadianTools.UI.WPF.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="IMV.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
 </Solution>
